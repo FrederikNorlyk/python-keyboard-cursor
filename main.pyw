@@ -36,8 +36,8 @@ class OverlayApp:
         num_rows = 26
 
         # Calculate square size
-        self.square_width = screen_width // num_columns
-        self.square_height = screen_height // num_rows
+        self.square_width = screen_width / num_columns
+        self.square_height = screen_height / num_rows
 
         # Generate the grid
         alphabet = string.ascii_uppercase
@@ -55,7 +55,7 @@ class OverlayApp:
                 y2 = y1 + self.square_height
 
                 # Store grid position for mouse movement
-                self.grid_positions[text] = (x1 + self.square_width // 2, y1 + self.square_height // 2)
+                self.grid_positions[text] = (x1 + self.square_width / 2, y1 + self.square_height / 2)
 
                 # Draw the square
                 self.canvas.create_rectangle(
@@ -64,8 +64,8 @@ class OverlayApp:
 
                 # Draw the text inside the square
                 self.canvas.create_text(
-                    x1 + self.square_width // 2,
-                    y1 + self.square_height // 2,
+                    x1 + self.square_width / 2,
+                    y1 + self.square_height / 2,
                     text=text,
                     font=("Consolas", 12, "bold"),
                     fill="black"
@@ -157,8 +157,8 @@ class OverlayApp:
         sub_square_height = self.square_height / num_rows
 
         # Calculate the new top-left corner of the subgrid
-        subgrid_x1 = x - (sub_square_width * num_columns) // 2  # Adjust for the number of columns
-        subgrid_y1 = y - (sub_square_height * num_rows) // 2  # Adjust for the number of rows
+        subgrid_x1 = x - (sub_square_width * num_columns) / 2  # Adjust for the number of columns
+        subgrid_y1 = y - (sub_square_height * num_rows) / 2  # Adjust for the number of rows
 
         i = 0
         for row in range(num_rows):
@@ -175,14 +175,14 @@ class OverlayApp:
                     sub_x1, sub_y1, sub_x2, sub_y2, fill="lightgray", outline="black"
                 )
                 self.canvas.create_text(
-                    sub_x1 + sub_square_width // 2,
-                    sub_y1 + sub_square_height // 2,
+                    sub_x1 + sub_square_width / 2,
+                    sub_y1 + sub_square_height / 2,
                     text=letter,
                     font=("Consolas", 12, "bold"),
                     fill="black"
                 )
 
-                self.grid_positions[f"{self.selected_square[0]}{self.selected_square[1]}{letter}"] = (sub_x1 + sub_square_width // 2, sub_y1 + sub_square_height // 2)
+                self.grid_positions[f"{self.selected_square[0]}{self.selected_square[1]}{letter}"] = (sub_x1 + sub_square_width / 2, sub_y1 + sub_square_height / 2)
                 i += 1
 
 
