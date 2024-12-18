@@ -9,7 +9,6 @@ class OverlayApp:
         self.root = None
         self.canvas = None
         self.grid_positions = {}  # Dictionary to store square positions by label
-        self.selected_square = None  # To store the selected grid square
         self.square_width = None
         self.square_height = None
 
@@ -40,12 +39,22 @@ class OverlayApp:
         self.square_height = screen_height / num_rows
 
         # Generate the grid
+        self.draw_grid(num_columns, num_rows)
+
+        # Start listening for key presses in a separate thread
+        threading.Thread(target=self.listen_for_key_presses, daemon=True).start()
+
+        # Start the Tkinter event loop
+        self.root.mainloop()
+
+    def draw_grid(self, num_columns, num_rows):
         alphabet = string.ascii_uppercase
+
         for row in range(num_rows):
             for col in range(num_columns):
                 # Generate the indexed text
-                row_letter = alphabet[row % len(alphabet)]
-                col_letter = alphabet[col % len(alphabet)]
+                row_letter = alphabet[row]
+                col_letter = alphabet[col]
                 text = f"{col_letter}{row_letter}"
 
                 # Calculate square position
@@ -71,94 +80,96 @@ class OverlayApp:
                     fill="black"
                 )
 
-        # Start listening for key presses in a separate thread
-        threading.Thread(target=self.listen_for_key_presses, daemon=True).start()
-
-        # Start the Tkinter event loop
-        self.root.mainloop()
-
-    def hide_overlay(self):
-        """Hides the overlay safely."""
-        if self.root:
-            try:
-                self.root.quit()  # Stop the mainloop
-                self.root.update()  # Process any remaining events
-                self.root.destroy()  # Destroy the Tk instance
-            except Exception as e:
-                print(f"Error while hiding overlay: {e}")
-            finally:
-                self.root = None
-                self.canvas = None
-                self.grid_positions = {}
-
     def listen_for_key_presses(self):
         """Listen for key presses to toggle or interact with the overlay."""
-        first_key = None
-        while not first_key:
+
+        alphabet = string.ascii_uppercase
+
+        # Detect the first character
+        first_character = None
+        while not first_character:
             event = keyboard.read_event(suppress=True)
 
+            if not event.event_type == "down":
+                continue
+
             if event.name == "esc":
-                self.hide_overlay()
+                self.root.quit()
                 return
 
-            if event.event_type == "down" and event.name.isalpha():
-                first_key = event.name.upper()
+            if event.name.upper() in alphabet:
+                first_character = event.name.upper()
 
-        second_key = None
-        while not second_key:
+        # Detect the second character
+        second_character = None
+        while not second_character:
             event = keyboard.read_event(suppress=True)
 
+            if not event.event_type == "down":
+                continue
+
             if event.name == "esc":
-                self.hide_overlay()
+                self.root.quit()
                 return
 
-            if event.event_type == "down" and event.name.isalpha():
-                second_key = event.name.upper()
+            if event.name.upper() in alphabet:
+                second_character = event.name.upper()
 
-        # Construct the label and move the mouse if valid
-        label = f"{first_key}{second_key}"
+        # Draw a subgrid for fine precision inside the selected square
+        label = f"{first_character}{second_character}"
         if label in self.grid_positions:
-            x, y = self.grid_positions[label]
-            self.selected_square = (first_key, second_key)
-            self.clear_canvas()
-            self.draw_subgrid(x, y)  # Draw a new 8x1 grid inside the selected square
 
-        # Listen for the third keypress (A-H) to click on the corresponding square
-        third_key = None
-        while not third_key:
+            self.canvas.delete("all")
+
+            # Calculate the new top-left corner of the subgrid
+            center_x, center_y = self.grid_positions[label]
+            x = center_x - self.square_width / 2
+            y = center_y - self.square_height / 2
+
+            self.draw_subgrid(x, y)
+        else:
+            self.root.quit()
+            return
+
+        # Listen for the third character
+        third_character = None
+        while not third_character:
             event = keyboard.read_event(suppress=True)
 
+            if not event.event_type == "down":
+                continue
+
             if event.name == "esc":
-                self.hide_overlay()
+                self.root.quit()
                 return
 
-            if event.event_type == "down" and event.name.isalpha() and event.name.isalpha():
-                third_key = event.name.upper()
+            if not event.name.upper() in self.grid_positions:
+                continue
 
-        label = f"{self.selected_square[0]}{self.selected_square[1]}{third_key}"
-        if label in self.grid_positions:
-            x, y = self.grid_positions[label]
-            self.clear_canvas()
-            pyautogui.moveTo(x, y)  # Move the mouse to the corresponding square
-            pyautogui.click(x, y)
+            third_character = event.name.upper()
 
-        self.hide_overlay()
-
-    def clear_canvas(self):
-        """Clears the canvas."""
+        # Clear the canvas so that the mouse can click through the overlay
         self.canvas.delete("all")
+
+        # Perform the mouse click
+        x, y = self.grid_positions[third_character]
+        pyautogui.moveTo(x, y)
+        pyautogui.click(x, y)
+
+        self.root.quit()
 
     def draw_subgrid(self, x, y):
         """Draws a new 6x3 grid inside the selected square."""
+
         alphabet = string.ascii_uppercase
+
+        # Fixed grid dimensions
         num_columns = 6
         num_rows = 3
-        sub_square_width = self.square_width / num_columns  # Adjust the size of the new squares
-        sub_square_height = self.square_height / num_rows
 
-        # Calculate the new top-left corner of the subgrid
-        subgrid_x1 = x - (sub_square_width * num_columns) / 2  # Adjust for the number of columns
-        subgrid_y1 = y - (sub_square_height * num_rows) / 2  # Adjust for the number of rows
+        # Square dimensions
+        sub_square_width = self.square_width / num_columns
+        sub_square_height = self.square_height / num_rows
 
         i = 0
         for row in range(num_rows):
@@ -166,23 +177,24 @@ class OverlayApp:
                 letter = alphabet[i]
 
                 # Calculate positions based on both row and column
-                sub_x1 = subgrid_x1 + col * sub_square_width
-                sub_y1 = subgrid_y1 + row * sub_square_height
-                sub_x2 = sub_x1 + sub_square_width
-                sub_y2 = sub_y1 + sub_square_height
+                x1 = x + col * sub_square_width
+                y1 = y + row * sub_square_height
+                x2 = x1 + sub_square_width
+                y2 = y1 + sub_square_height
 
                 self.canvas.create_rectangle(
-                    sub_x1, sub_y1, sub_x2, sub_y2, fill="lightgray", outline="black"
+                    x1, y1, x2, y2, fill="lightgray", outline="black"
                 )
+
                 self.canvas.create_text(
-                    sub_x1 + sub_square_width / 2,
-                    sub_y1 + sub_square_height / 2,
+                    x1 + sub_square_width / 2,
+                    y1 + sub_square_height / 2,
                     text=letter,
                     font=("Consolas", 12, "bold"),
                     fill="black"
                 )
 
-                self.grid_positions[f"{self.selected_square[0]}{self.selected_square[1]}{letter}"] = (sub_x1 + sub_square_width / 2, sub_y1 + sub_square_height / 2)
+                self.grid_positions[letter] = (x1 + sub_square_width / 2, y1 + sub_square_height / 2)
                 i += 1
 
 
