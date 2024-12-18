@@ -1,6 +1,5 @@
 import tkinter as tk
 import keyboard
-import threading
 import string
 import pyautogui
 
@@ -8,15 +7,10 @@ class OverlayApp:
     def __init__(self):
         self.root = None
         self.canvas = None
-        self.running = False
         self.grid_positions = {}  # Dictionary to store square positions by label
 
     def show_overlay(self):
         """Displays the overlay with a fixed 26x26 grid of indexed squares."""
-        if self.running:
-            return
-
-        self.running = True
         self.root = tk.Tk()
         self.root.title("Grid Overlay")
         self.root.attributes("-fullscreen", True)
@@ -73,7 +67,7 @@ class OverlayApp:
                 )
 
         # Handle closing the overlay
-        self.root.protocol("WM_DELETE_WINDOW", self.hide_overlay)
+        # self.root.protocol("WM_DELETE_WINDOW", self.hide_overlay)
         self.root.mainloop()
 
     def hide_overlay(self):
@@ -89,41 +83,34 @@ class OverlayApp:
                 self.root = None
                 self.canvas = None
                 self.grid_positions = {}
-                self.running = False
 
+    def listen_for_key_presses(self):
+        """Listen for key presses to toggle or interact with the overlay."""
 
-def listen_for_hotkey(app):
-    """Listen for key presses to toggle or interact with the overlay."""
-    while True:
-        if not app.running:
-            # Wait for the hotkey to toggle the overlay
-            keyboard.wait("shift+alt+o")
-            threading.Thread(target=app.show_overlay).start()
-        else:
-            # Listen for two key presses for navigation
-            first_key = None
-            while not first_key:
-                event = keyboard.read_event(suppress=True)
-                if event.event_type == "down" and event.name.isalpha():
-                    first_key = event.name.upper()
+        first_key = None
+        while not first_key:
+            event = keyboard.read_event(suppress=True)
+            if event.event_type == "down" and event.name.isalpha():
+                first_key = event.name.upper()
 
-            second_key = None
-            while not second_key:
-                event = keyboard.read_event(suppress=True)
-                if event.event_type == "down" and event.name.isalpha():
-                    second_key = event.name.upper()
+        second_key = None
+        while not second_key:
+            event = keyboard.read_event(suppress=True)
+            if event.event_type == "down" and event.name.isalpha():
+                second_key = event.name.upper()
 
-            # Construct the label and move the mouse if valid
-            label = f"{first_key}{second_key}"
-            if label in app.grid_positions:
-                x, y = app.grid_positions[label]
-                pyautogui.moveTo(x, y)  # Move the mouse to the corresponding square
-            else:
-                print(f"Invalid grid position: {label}")
+        # Construct the label and move the mouse if valid
+        label = f"{first_key}{second_key}"
+        if not label in self.grid_positions:
+            print(f"Invalid grid position: {label}")
+            return
 
-            app.hide_overlay()
-
+        x, y = self.grid_positions[label]
+        pyautogui.moveTo(x, y)  # Move the mouse to the corresponding square
+        pyautogui.click(x, y)
 
 if __name__ == "__main__":
     app = OverlayApp()
-    listen_for_hotkey(app)
+    app.show_overlay()
+    app.listen_for_key_presses()
+    app.hide_overlay()
