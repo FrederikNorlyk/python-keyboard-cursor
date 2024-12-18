@@ -96,12 +96,22 @@ class OverlayApp:
         first_key = None
         while not first_key:
             event = keyboard.read_event(suppress=True)
+
+            if event.name == "esc":
+                self.hide_overlay()
+                return
+
             if event.event_type == "down" and event.name.isalpha():
                 first_key = event.name.upper()
 
         second_key = None
         while not second_key:
             event = keyboard.read_event(suppress=True)
+
+            if event.name == "esc":
+                self.hide_overlay()
+                return
+
             if event.event_type == "down" and event.name.isalpha():
                 second_key = event.name.upper()
 
@@ -117,6 +127,11 @@ class OverlayApp:
         third_key = None
         while not third_key:
             event = keyboard.read_event(suppress=True)
+
+            if event.name == "esc":
+                self.hide_overlay()
+                return
+
             if event.event_type == "down" and event.name.isalpha() and event.name.isalpha():
                 third_key = event.name.upper()
 
