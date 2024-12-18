@@ -2,6 +2,8 @@ import tkinter as tk
 import keyboard
 import string
 import pyautogui
+import threading
+
 
 class OverlayApp:
     def __init__(self):
@@ -10,25 +12,26 @@ class OverlayApp:
         self.grid_positions = {}  # Dictionary to store square positions by label
 
     def show_overlay(self):
-        """Displays the overlay with a fixed 26x26 grid of indexed squares."""
+        """Displays the overlay with a fixed 4x4 grid of indexed squares."""
         self.root = tk.Tk()
         self.root.title("Grid Overlay")
         self.root.attributes("-fullscreen", True)
         self.root.attributes("-topmost", True)
         self.root.configure(bg="white")  # Use white for transparency
         self.root.attributes("-transparentcolor", "white")
+        self.root.attributes("-alpha", 0.4)
 
         # Create the canvas
         self.canvas = tk.Canvas(self.root, bg="white", highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
 
         # Screen dimensions
-        screen_width = 300 # self.root.winfo_screenwidth()
-        screen_height = 300 # self.root.winfo_screenheight()
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
 
         # Fixed grid dimensions
-        num_columns = 4 # 26
-        num_rows = 4 # 26
+        num_columns = 26
+        num_rows = 26
 
         # Calculate square size
         square_width = screen_width // num_columns
@@ -62,12 +65,14 @@ class OverlayApp:
                     x1 + square_width // 2,
                     y1 + square_height // 2,
                     text=text,
-                    font=("Helvetica", 12),
+                    font=("Consolas", 12),
                     fill="black"
                 )
 
-        # Handle closing the overlay
-        # self.root.protocol("WM_DELETE_WINDOW", self.hide_overlay)
+        # Start listening for key presses in a separate thread
+        threading.Thread(target=self.listen_for_key_presses, daemon=True).start()
+
+        # Start the Tkinter event loop
         self.root.mainloop()
 
     def hide_overlay(self):
@@ -86,7 +91,6 @@ class OverlayApp:
 
     def listen_for_key_presses(self):
         """Listen for key presses to toggle or interact with the overlay."""
-
         first_key = None
         while not first_key:
             event = keyboard.read_event(suppress=True)
@@ -101,16 +105,15 @@ class OverlayApp:
 
         # Construct the label and move the mouse if valid
         label = f"{first_key}{second_key}"
-        if not label in self.grid_positions:
-            print(f"Invalid grid position: {label}")
-            return
+        if label in self.grid_positions:
+            x, y = self.grid_positions[label]
+            self.root.withdraw()
+            pyautogui.moveTo(x, y)  # Move the mouse to the corresponding square
+            pyautogui.click(x, y)
 
-        x, y = self.grid_positions[label]
-        pyautogui.moveTo(x, y)  # Move the mouse to the corresponding square
-        pyautogui.click(x, y)
+        self.hide_overlay()
+
 
 if __name__ == "__main__":
     app = OverlayApp()
     app.show_overlay()
-    app.listen_for_key_presses()
-    app.hide_overlay()
