@@ -4,18 +4,13 @@ import string
 import pyautogui
 import threading
 
-class OverlayApp:
-    def __init__(self):
-        self.root = None
-        self.canvas = None
-        self.grid_positions = {}  # Dictionary to store square positions by label
-        self.square_width = None
-        self.square_height = None
 
-    def show_overlay(self):
-        """Displays the overlay with a fixed 26x26 grid of indexed squares."""
+class Overlay:
+    def __init__(self):
+        self.grid_positions = {}  # Dictionary to store square positions by label
+
         self.root = tk.Tk()
-        self.root.title("Grid Overlay")
+        self.root.title("Keyboard cursor")
         self.root.attributes("-fullscreen", True)
         self.root.attributes("-topmost", True)
         self.root.configure(bg="white")  # Use white for transparency
@@ -57,14 +52,16 @@ class OverlayApp:
                 col_letter = alphabet[col]
                 text = f"{col_letter}{row_letter}"
 
-                # Calculate square position
+                # Calculate the square's position
                 x1 = col * self.square_width
                 y1 = row * self.square_height
                 x2 = x1 + self.square_width
                 y2 = y1 + self.square_height
 
-                # Store grid position for mouse movement
-                self.grid_positions[text] = (x1 + self.square_width / 2, y1 + self.square_height / 2)
+                # Store the center position of each square by label.
+                center_x = x1 + self.square_width / 2
+                center_y = y1 + self.square_height / 2
+                self.grid_positions[text] = (center_x, center_y)
 
                 # Draw the square
                 self.canvas.create_rectangle(
@@ -73,15 +70,15 @@ class OverlayApp:
 
                 # Draw the text inside the square
                 self.canvas.create_text(
-                    x1 + self.square_width / 2,
-                    y1 + self.square_height / 2,
+                    center_x,
+                    center_y,
                     text=text,
                     font=("Consolas", 12, "bold"),
                     fill="black"
                 )
 
     def listen_for_key_presses(self):
-        """Listen for key presses to toggle or interact with the overlay."""
+        """Listen for a sequence of key presses to navigate and select within the overlay."""
 
         alphabet = string.ascii_uppercase
 
@@ -115,21 +112,17 @@ class OverlayApp:
             if event.name.upper() in alphabet:
                 second_character = event.name.upper()
 
-        # Draw a subgrid for fine precision inside the selected square
+        # Clear the canvas to prepare for drawing the subgrid.
+        self.canvas.delete("all")
+
+        # Calculate the new top-left corner of the subgrid
         label = f"{first_character}{second_character}"
-        if label in self.grid_positions:
+        center_x, center_y = self.grid_positions[label]
+        x = center_x - self.square_width / 2
+        y = center_y - self.square_height / 2
 
-            self.canvas.delete("all")
-
-            # Calculate the new top-left corner of the subgrid
-            center_x, center_y = self.grid_positions[label]
-            x = center_x - self.square_width / 2
-            y = center_y - self.square_height / 2
-
-            self.draw_subgrid(x, y)
-        else:
-            self.root.quit()
-            return
+        # Draw a subgrid for fine precision inside the selected square
+        self.draw_subgrid(x, y)
 
         # Listen for the third character
         third_character = None
@@ -159,21 +152,21 @@ class OverlayApp:
         self.root.quit()
 
     def draw_subgrid(self, x, y):
-        """Draws a new 6x3 grid inside the selected square."""
+        """Draw a 6x3 subgrid for finer selection precision inside the selected square."""
 
         alphabet = string.ascii_uppercase
 
         # Fixed grid dimensions
-        num_columns = 6
-        num_rows = 3
+        number_of_columns = 6
+        number_of_rows = 3
 
         # Square dimensions
-        sub_square_width = self.square_width / num_columns
-        sub_square_height = self.square_height / num_rows
+        sub_square_width = self.square_width / number_of_columns
+        sub_square_height = self.square_height / number_of_rows
 
         i = 0
-        for row in range(num_rows):
-            for col in range(num_columns):
+        for row in range(number_of_rows):
+            for col in range(number_of_columns):
                 letter = alphabet[i]
 
                 # Calculate positions based on both row and column
@@ -182,23 +175,27 @@ class OverlayApp:
                 x2 = x1 + sub_square_width
                 y2 = y1 + sub_square_height
 
+                # Store the center position of each square by label.
+                center_x = x1 + sub_square_width / 2
+                center_y = y1 + sub_square_height / 2
+                self.grid_positions[letter] = (center_x, center_y)
+
+                # Draw the square
                 self.canvas.create_rectangle(
                     x1, y1, x2, y2, fill="lightgray", outline="black"
                 )
 
+                # Draw the text inside the square
                 self.canvas.create_text(
-                    x1 + sub_square_width / 2,
-                    y1 + sub_square_height / 2,
+                    center_x,
+                    center_y,
                     text=letter,
                     font=("Consolas", 12, "bold"),
                     fill="black"
                 )
 
-                self.grid_positions[letter] = (x1 + sub_square_width / 2, y1 + sub_square_height / 2)
                 i += 1
 
 
-
 if __name__ == "__main__":
-    app = OverlayApp()
-    app.show_overlay()
+    app = Overlay()
