@@ -8,18 +8,8 @@ import threading
 class Overlay:
     def __init__(self):
         self.grid_positions = {}  # Dictionary to store square positions by label
-
-        self.root = tk.Tk()
-        self.root.title("Keyboard cursor")
-        self.root.attributes("-fullscreen", True)
-        self.root.attributes("-topmost", True)
-        self.root.configure(bg="white")  # Use white for transparency
-        self.root.attributes("-transparentcolor", "white")
-        self.root.attributes("-alpha", 0.4)
-
-        # Create the canvas
-        self.canvas = tk.Canvas(self.root, bg="white", highlightthickness=0)
-        self.canvas.pack(fill="both", expand=True)
+        self.root = self.setup_root()
+        self.canvas = self.setup_canvas()
 
         # Screen dimensions
         screen_width = self.root.winfo_screenwidth()
@@ -41,6 +31,21 @@ class Overlay:
 
         # Start the Tkinter event loop
         self.root.mainloop()
+
+    def setup_root(self):
+        root = tk.Tk()
+        root.title("Keyboard Cursor")
+        root.attributes("-fullscreen", True)
+        root.attributes("-topmost", True)
+        root.configure(bg="white")
+        root.attributes("-transparentcolor", "white")
+        root.attributes("-alpha", 0.4)
+        return root
+
+    def setup_canvas(self):
+        canvas = tk.Canvas(self.root, bg="white", highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
+        return canvas
 
     def draw_grid(self, num_columns, num_rows):
         alphabet = string.ascii_uppercase
