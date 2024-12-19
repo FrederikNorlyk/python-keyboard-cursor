@@ -1,5 +1,12 @@
 # Keyboard based cursor
-A simple python script which displays an overlay containing a grid of characters. When pressing a combination of characters the mouse will move to its location and perform a single click.
+A simple Python script which displays an overlay containing a grid of characters. When pressing a combination of characters the mouse will move to its location and perform a single click.
+
+## Dependencies
+To install dependencies, run:
+
+```bash
+pip install -r requirements.txt
+```
 
 ## Usage
 One way to toggle the script is by using AutoHotkey.
