@@ -131,20 +131,24 @@ class Overlay:
 
         # Listen for the third character
         third_character = None
+        shift_key_is_held = False
         while not third_character:
             event = keyboard.read_event(suppress=True)
 
-            if not event.event_type == "down":
-                continue
+            if event.event_type == "down":
+                if event.name == "esc":
+                    self.root.quit()
+                    return
+                elif event.name == 'skift':
+                    shift_key_is_held = True
+                    continue
 
-            if event.name == "esc":
-                self.root.quit()
-                return
+                if not event.name.upper() in self.grid_positions:
+                    continue
 
-            if not event.name.upper() in self.grid_positions:
-                continue
-
-            third_character = event.name.upper()
+                third_character = event.name.upper()
+            elif event.event_type == 'up' and event.name == 'skift':
+                shift_key_is_held = False
 
         # Clear the canvas so that the mouse can click through the overlay
         self.canvas.delete("all")
@@ -152,7 +156,12 @@ class Overlay:
         # Perform the mouse click
         x, y = self.grid_positions[third_character]
         pyautogui.moveTo(x, y)
-        pyautogui.click(x, y)
+
+        if shift_key_is_held:
+            pyautogui.rightClick(x, y)
+        else:
+            pyautogui.click(x, y)
+
 
         self.root.quit()
 
